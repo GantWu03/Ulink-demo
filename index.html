@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ULink</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['"Noto Sans SC"','sans-serif']}}}}</script>
+    <style>
+        :root{--bg:#FDFDFE;--pri:#3B5BDB;--pri-light:#EDF2FF;--txt:#1A1A2E;--txt-sub:#55556A;--txt-weak:#9898AE;--line:#E0E0EA;--danger:#FF4D6A}
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+        body{font-family:'Noto Sans SC',sans-serif;background:#D0D0DA;overflow:hidden}
+        .phone{width:100%;max-width:390px;height:100vh;max-height:844px;margin:0 auto;position:relative;overflow:hidden;background:var(--bg)}
+        @media(max-width:767px){.phone{max-height:none}}
+        @media(min-width:768px){body{display:flex;align-items:center;justify-content:center;min-height:100vh}.phone{border-radius:44px;border:5px solid #1A1A2E;box-shadow:0 20px 60px rgba(0,0,0,.22)}}
+
+        .page{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg);z-index:1;will-change:transform}
+        .page.active{display:flex}
+        .page.sub{z-index:20;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1)}
+        .page.sub.active{transform:translateX(0)}
+        .page.sub.leaving{transform:translateX(100%)}
+
+        .bot-nav{position:absolute;bottom:0;left:0;right:0;height:64px;background:#fff;border-top:1px solid var(--line);z-index:10;display:none;align-items:center}
+        .bot-nav.show{display:flex}
+        .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--txt-weak);transition:color .15s;user-select:none}
+        .nav-item.on{color:var(--pri)}.nav-item i{font-size:19px}.nav-item span{font-size:10px;font-weight:500}
+
+        .lcard{background:#fff;border:1px solid var(--line);border-radius:14px}
+        .pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-weight:600;cursor:pointer;transition:transform .1s;user-select:none;border:none;outline:none}
+        .pill:active{transform:scale(.97)}
+        .pill-pri{background:var(--pri);color:#fff}
+        .pill-line{background:transparent;border:1px solid var(--line);color:var(--txt-sub)}
+
+        .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:500;border:1px solid var(--line);color:var(--txt-sub)}
+        .tag-pri{border-color:var(--pri);color:var(--pri)}
+        .tag-warm{border-color:#D97706;color:#D97706}
+
+        .ctag{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;background:#fff;color:var(--txt-sub);border:1px solid rgba(0,0,0,.04);box-shadow:0 1px 4px rgba(0,0,0,.05)}
+        .ctag i{font-size:12px}
+        .ctag-blue{background:#EDF2FF;color:#3B5BDB;border-color:#D0D9F7}
+        .ctag-amber{background:#FFF7ED;color:#C2410C;border-color:#FDDCB3}
+        .ctag-emerald{background:#ECFDF5;color:#047857;border-color:#A7F3D0}
+        .ctag-violet{background:#F5F3FF;color:#6D28D9;border-color:#C4B5FD}
+        .ctag-rose{background:#FFF1F2;color:#BE123C;border-color:#FECDD3}
+        .ctag-slate{background:#F8FAFC;color:#475569;border-color:#CBD5E1}
+        .ctag-sm{display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,.03);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+
+        .verify-card{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;background:linear-gradient(135deg,#EEF2FF,#DBEAFE);border:1px solid #C7D6F5;box-shadow:0 1px 4px rgba(59,91,219,.07)}
+
+        .show-card{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;transition:transform .1s;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+        .show-card:active{transform:scale(.98)}
+        .show-card.done{opacity:.5;pointer-events:none;border-color:#A7F3D0;background:#F0FDF4}
+
+        .scene-wrap{display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:16px 0 6px;touch-action:pan-y}
+        .scene-card{border-radius:16px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;user-select:none;border:1.5px solid var(--line)}
+        .scene-card i{margin-bottom:3px}.scene-card span{font-weight:600}
+        .scene-card.off{width:64px;height:64px;font-size:12px;color:var(--txt-weak)}.scene-card.off i{font-size:18px;color:var(--txt-weak)}
+        .scene-card.on{width:84px;height:84px;font-size:14px;color:var(--pri);border-color:var(--pri)}.scene-card.on i{font-size:24px;color:var(--pri)}
+        .dots{display:flex;gap:5px;justify-content:center;padding:8px 0 2px}
+        .dots span{width:5px;height:5px;border-radius:50%;border:1px solid var(--line);transition:all .25s;background:transparent}
+        .dots span.on{width:16px;border-radius:3px;background:var(--pri);border-color:var(--pri)}
+
+        .match-anim{position:absolute;inset:0;z-index:15;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center}
+        .match-anim.show{display:flex}
+        .pulse-ring{width:90px;height:90px;border-radius:50%;border:1.5px solid var(--pri);animation:pr 1.2s ease-in-out infinite}
+        .pulse-ring:nth-child(2){animation-delay:.4s;position:absolute}
+        @keyframes pr{0%{transform:scale(.7);opacity:.7}50%{transform:scale(1.3);opacity:.2}100%{transform:scale(.7);opacity:.7}}
+
+        .overlay{position:absolute;inset:0;z-index:50;display:none;flex-direction:column;justify-content:flex-end}
+        .overlay.show{display:flex}
+        .overlay-bg{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+        .bsheet{position:relative;z-index:1;background:#fff;border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:22px 20px 34px;animation:su .25s cubic-bezier(.4,0,.2,1)}
+        @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+        .dropdown{position:absolute;top:44px;left:12px;z-index:40;background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px 0;min-width:150px;display:none}
+        .dropdown.show{display:block}
+        .dropdown-item{padding:11px 16px;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--txt);cursor:pointer}
+        .dropdown-item:active{background:#F0F0F6}
+        .dropdown-item i{color:var(--pri);width:16px;text-align:center;font-size:13px}
+
+        .toast-box{position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:100;background:var(--txt);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap}
+        .toast-box.show{opacity:1}
+
+        .bubble{max-width:75%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.6;word-break:break-word}
+        .bubble-other{background:#fff;border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--txt)}
+        .bubble-self{background:var(--pri);color:#fff;border-bottom-right-radius:3px}
+        .my-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#FBBF24,#F59E0B);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .my-av i{font-size:12px;color:#fff}
+
+        .chat-input{flex:1;border:1px solid var(--line);border-radius:18px;padding:7px 14px;font-size:13px;outline:none;background:#fff;font-family:inherit}
+        .chat-input:focus{border-color:var(--pri)}
+        .chat-input:disabled{background:#F5F5F8;color:var(--txt-weak)}
+
+        .scroll-area::-webkit-scrollbar{display:none}
+        .scroll-area{-ms-overflow-style:none;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+        .divider{height:1px;background:var(--line);margin:14px 0}
+        .section-title{font-size:13px;font-weight:700;color:var(--txt-weak);margin-bottom:10px;letter-spacing:.5px}
+
+        /* 消息行 */
+        .msg-row{display:flex;gap:8px;align-items:flex-start}
+        .msg-row.self{flex-direction:row-reverse}
+    </style>
+</head>
+<body>
+<div class="phone" id="app">
+
+    <!-- 发现页 -->
+    <div class="page active" id="pg-discover">
+        <div style="flex-shrink:0;padding:14px 18px 0;display:flex;align-items:center">
+            <div style="position:relative">
+                <div id="plus-btn" onclick="toggleDD()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--txt-weak)"><i class="fas fa-plus"></i></div>
+                <div class="dropdown" id="dd"><div class="dropdown-item" onclick="goProfileForm()"><i class="fas fa-user-pen"></i>填写用户画像</div></div>
+            </div>
+        </div>
+        <div id="scene-section">
+            <div class="scene-wrap" id="scene-carousel">
+                <div class="scene-card off" onclick="selScene('活动')"><i class="fas fa-calendar"></i><span>活动</span></div>
+                <div class="scene-card on" onclick="selScene('共友')"><i class="fas fa-user-group"></i><span>共友</span></div>
+                <div class="scene-card off" onclick="selScene('校友')"><i class="fas fa-graduation-cap"></i><span>校友</span></div>
+            </div>
+            <div class="dots"><span></span><span class="on"></span><span></span></div>
+        </div>
+        <div class="scroll-area" style="flex:1;overflow-y:auto;padding:0 18px 76px">
+            <div id="st-a" style="padding:40px 0;text-align:center">
+                <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center"><i class="fas fa-link" style="font-size:24px;color:var(--pri)"></i></div>
+                <h2 style="font-size:20px;font-weight:800;color:var(--txt);margin-bottom:6px">欢迎来到ULink</h2>
+                <p style="font-size:13px;color:var(--txt-sub);line-height:1.7;margin-bottom:24px">填写我的信息及画像后<br>就可以开始匹配</p>
+                <button class="pill pill-pri" style="padding:10px 32px;font-size:14px" onclick="goProfileForm()">填写用户画像</button>
+            </div>
+            <div id="st-b" style="display:none;padding:40px 0;text-align:center">
+                <div style="width:64px;height:64px;margin:0 auto 16px;border-radius:50%;border:1.5px solid var(--pri);display:flex;align-items:center;justify-content:center"><i class="fas fa-link" style="font-size:24px;color:var(--pri)"></i></div>
+                <h2 style="font-size:20px;font-weight:800;color:var(--txt);margin-bottom:6px">欢迎来到ULink</h2>
+                <p style="font-size:13px;color:var(--txt-sub);line-height:1.7;margin-bottom:24px">你的画像已就绪<br>开始匹配志同道合的朋友吧</p>
+                <button class="pill pill-pri" style="padding:10px 32px;font-size:14px" onclick="startMatch()">开始匹配</button>
+            </div>
+            <div id="st-c" style="display:none">
+                <div class="lcard" style="padding:16px;position:relative;overflow:hidden">
+                    <div class="verify-card" style="position:absolute;top:14px;right:14px;padding:5px 10px;gap:4px">
+                        <span style="font-size:11px;font-weight:700;color:var(--txt)">山东大学</span>
+                        <span style="font-size:10px;color:var(--pri)"><i class="fas fa-circle-check" style="font-size:9px"></i> 已认证</span>
+                    </div>
+                    <div style="margin-bottom:8px;padding-right:100px"><img src="https://picsum.photos/seed/linxq88/200/200.jpg" style="width:56px;height:56px;border-radius:50%;object-fit:cover"></div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><h3 style="font-size:16px;font-weight:800;color:var(--txt)">林小晴</h3><span class="tag-pri tag" style="font-size:10px">共友</span></div>
+                    <p style="font-size:12px;color:var(--txt-sub);line-height:1.6;margin-bottom:1px">设计系大三</p>
+                    <p style="font-size:12px;color:var(--txt-sub);line-height:1.6;margin-bottom:1px">摄影 · 手冲咖啡 · UI设计</p>
+                    <p style="font-size:12px;color:var(--txt-weak);line-height:1.6;margin-bottom:6px;font-style:italic">用镜头记录生活的温度</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"><span class="ctag-sm ctag-blue">设计</span><span class="ctag-sm ctag-violet">摄影</span><span class="ctag-sm ctag-amber">咖啡</span></div>
+                    <div class="divider" style="margin:0 0 10px"></div>
+                    <div style="margin-bottom:14px"><p style="font-size:11px;color:var(--txt-weak);margin-bottom:3px">推荐理由</p><p style="font-size:12px;color:var(--txt-sub);line-height:1.6">你们有3位共同好友，且都热爱设计领域。她最近也在寻找设计伙伴，可能很适合你！</p></div>
+                    <div style="display:flex;gap:10px"><button class="pill pill-line" style="flex:1;padding:8px 0;font-size:12px" onclick="rematch()"><i class="fas fa-rotate" style="margin-right:4px;font-size:10px"></i>重新匹配</button><button class="pill pill-pri" style="flex:1;padding:8px 0;font-size:12px" onclick="showAiD()"><i class="fas fa-robot" style="margin-right:4px;font-size:10px"></i>AI对话</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="match-anim" id="match-anim"><div style="position:relative;display:flex;align-items:center;justify-content:center;width:130px;height:130px"><div class="pulse-ring"></div><div class="pulse-ring"></div><i class="fas fa-link" style="font-size:28px;color:var(--pri);position:relative;z-index:2"></i></div><p style="margin-top:20px;font-size:14px;font-weight:500;color:var(--txt-sub)">正在为你匹配...</p></div>
+    </div>
+
+    <!-- 消息页 -->
+    <div class="page" id="pg-messages">
+        <div style="flex-shrink:0;padding:16px 18px 10px"><h1 style="font-size:24px;font-weight:900;color:var(--txt)">消息</h1></div>
+        <div class="scroll-area" style="flex:1;overflow-y:auto;padding:0 18px 76px">
+            <div style="padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:4px" onclick="goNewContacts()">
+                <div style="width:42px;height:42px;border-radius:12px;border:1.5px solid var(--pri);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-user-plus" style="color:var(--pri);font-size:15px"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--txt)">新的联系</div><div style="font-size:12px;color:var(--txt-weak);margin-top:1px">来看看有谁想和你做朋友吧</div></div>
+                <div style="min-width:20px;height:20px;border-radius:10px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">2</div>
+            </div>
+            <div style="padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openChatFrom('lin','pg-messages')">
+                <img src="https://picsum.photos/seed/linxq88/200/200.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                <div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"><span style="font-size:14px;font-weight:700;color:var(--txt)">林小晴</span><span style="font-size:11px;color:var(--txt-weak)">刚刚</span></div><div style="font-size:12px;color:var(--txt-weak);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">哇太巧了，我也是！</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我页 -->
+    <div class="page" id="pg-me">
+        <div class="scroll-area" style="flex:1;overflow-y:auto;padding:24px 18px 76px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+                <div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#FBBF24,#F59E0B);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" onclick="toast('点击可修改头像（内测版暂不支持）')"><i class="fas fa-cat" style="font-size:32px;color:#fff"></i></div>
+                <div class="verify-card" style="margin-top:8px"><span style="font-size:14px;font-weight:700;color:var(--txt)">山东大学</span><span style="font-size:12px;color:var(--pri)"><i class="fas fa-circle-check" style="font-size:11px"></i> 已认证</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:2px" onclick="toast('点击可修改昵称（内测版暂不支持）')"><h1 style="font-size:24px;font-weight:900;color:var(--txt)">momo</h1><i class="fas fa-pen" style="font-size:9px;color:var(--txt-weak)"></i></div>
+            <p style="font-size:13px;color:var(--txt-sub);line-height:1.7;margin-bottom:1px">10后学生</p>
+            <p style="font-size:13px;color:var(--txt-sub);line-height:1.7;margin-bottom:1px">产品 · 设计 · 全栈开发 · 工程师</p>
+            <p style="font-size:13px;color:var(--txt-sub);line-height:1.7;margin-bottom:4px">谷穗社区CEO</p>
+            <p style="font-size:13px;color:var(--txt-weak);line-height:1.7;margin-bottom:4px;font-style:italic">在网络海洋里找我</p>
+            <p style="font-size:12px;color:var(--pri);margin-bottom:16px;font-weight:500">www.gusui.site</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+                <span class="ctag ctag-blue"><i class="fas fa-briefcase"></i>产品</span><span class="ctag ctag-violet"><i class="fas fa-palette"></i>设计</span><span class="ctag ctag-emerald"><i class="fas fa-code"></i>全栈开发</span><span class="ctag ctag-amber"><i class="fas fa-gear"></i>工程师</span><span class="ctag ctag-rose"><i class="fas fa-crown"></i>谷穗社区CEO</span><span class="ctag ctag-slate"><i class="fas fa-location-dot"></i>中国·烟台市</span>
+            </div>
+            <div class="divider" style="margin:0 0 16px"></div>
+            <h3 style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:14px">动态</h3>
+            <div class="lcard" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="my-av" style="width:24px;height:24px;border-radius:50%"><i class="fas fa-cat" style="font-size:10px"></i></div><span style="font-size:13px;font-weight:700;color:var(--txt)">momo</span><span style="font-size:11px;color:var(--txt-weak);margin-left:auto">2小时前</span></div><p style="font-size:13px;color:var(--txt-sub);line-height:1.7">最近在研究AI辅助社交的可能性，觉得很有意思。人与人之间的连接，或许可以更自然一些。</p></div>
+            <div class="lcard" style="padding:14px 16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="my-av" style="width:24px;height:24px;border-radius:50%"><i class="fas fa-cat" style="font-size:10px"></i></div><span style="font-size:13px;font-weight:700;color:var(--txt)">momo</span><span style="font-size:11px;color:var(--txt-weak);margin-left:auto">昨天</span></div><p style="font-size:13px;color:var(--txt-sub);line-height:1.7">产品设计的核心是解决问题，而不是堆功能。简单、清晰、有用就好。</p></div>
+        </div>
+    </div>
+
+    <!-- 填写用户画像页 -->
+    <div class="page sub" id="pg-profile-form">
+        <div style="flex-shrink:0;display:flex;align-items:center;padding:14px 18px;gap:10px;border-bottom:1px solid var(--line)"><div onclick="goBack()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="fas fa-chevron-left" style="font-size:13px;color:var(--txt)"></i></div><h2 style="font-size:17px;font-weight:800;color:var(--txt)">用户画像</h2></div>
+        <div class="scroll-area" style="flex:1;overflow-y:auto;padding:20px 18px 24px">
+            <div class="lcard" style="padding:16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:8px"><i class="fas fa-sparkles" style="color:var(--pri);font-size:14px"></i><span style="font-size:14px;font-weight:700;color:var(--txt)">AI 总结</span></div><p style="font-size:12px;color:var(--txt-weak);line-height:1.7">完成问卷和聊天记录上传后，AI 将自动为你生成个性化画像总结</p></div>
+            <div class="lcard" style="padding:16px;margin-bottom:10px;cursor:pointer" onclick="fillQ()"><div style="display:flex;align-items:center;gap:7px"><i class="fas fa-clipboard-list" style="color:var(--pri);font-size:14px"></i><span style="font-size:14px;font-weight:700;color:var(--txt)">填写问卷</span><i class="fas fa-chevron-right" style="margin-left:auto;font-size:11px;color:var(--txt-weak)"></i></div><p style="font-size:12px;color:var(--txt-weak);margin-top:6px;line-height:1.5">回答几个简单问题，帮助我们了解你的兴趣和偏好</p></div>
+            <div class="lcard" style="padding:16px;margin-bottom:24px;cursor:pointer" onclick="toast('该功能即将上线，敬请期待')"><div style="display:flex;align-items:center;gap:7px"><i class="fas fa-message" style="color:var(--pri);font-size:14px"></i><span style="font-size:14px;font-weight:700;color:var(--txt)">聊天记录上传</span><span class="tag-pri tag" style="font-size:10px;margin-left:auto">即将上线</span></div><p style="font-size:12px;color:var(--txt-weak);margin-top:6px;line-height:1.5">上传聊天记录，让 AI 更精准地了解你的社交风格</p></div>
+            <button class="pill pill-pri" style="width:100%;padding:12px 0;font-size:14px" onclick="completeP()">完成画像填写</button>
+        </div>
+    </div>
+
+    <!-- 新的联系页 -->
+    <div class="page sub" id="pg-new-contacts">
+        <div style="flex-shrink:0;display:flex;align-items:center;padding:14px 18px;gap:10px;border-bottom:1px solid var(--line)"><div onclick="goBack()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="fas fa-chevron-left" style="font-size:13px;color:var(--txt)"></i></div><h2 style="font-size:17px;font-weight:800;color:var(--txt)">新的联系</h2></div>
+        <div class="scroll-area" style="flex:1;overflow-y:auto;padding:16px 18px 24px">
+            <div style="margin-bottom:20px">
+                <div class="section-title"><i class="fas fa-inbox" style="margin-right:4px"></i>我收到的</div>
+                <div class="lcard" style="padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="openChatFrom('zhang','received')">
+                    <img src="https://picsum.photos/seed/zhangmy7/200/200.jpg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+                    <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:14px;font-weight:700;color:var(--txt)">张明远</span><span class="tag-warm tag" style="font-size:10px">校友</span></div><p style="font-size:12px;color:var(--txt-weak);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">什么项目？我对编程也挺感兴趣的</p></div>
+                    <div style="width:7px;height:7px;border-radius:50%;background:var(--danger);flex-shrink:0"></div>
+                </div>
+            </div>
+            <div>
+                <div class="section-title"><i class="fas fa-paper-plane" style="margin-right:4px"></i>我发出的</div>
+                <div id="sent-list"><div id="sent-empty" style="padding:20px 0;text-align:center"><p style="font-size:13px;color:var(--txt-weak)">暂无发出的联系</p></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天页 -->
+    <div class="page sub" id="pg-chat">
+        <div style="flex-shrink:0;display:flex;align-items:center;padding:14px 18px;gap:10px;border-bottom:1px solid var(--line);background:#fff">
+            <div onclick="goBack()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="fas fa-chevron-left" style="font-size:13px;color:var(--txt)"></i></div>
+            <div><div style="font-size:15px;font-weight:700;color:var(--txt)" id="chat-name"></div><div style="font-size:10px;color:var(--txt-weak)" id="chat-source"></div></div>
+        </div>
+        <div class="scroll-area" id="chat-bubbles" style="flex:1;overflow-y:auto;padding:14px 18px"><div id="chat-messages" style="display:flex;flex-direction:column;gap:10px"></div></div>
+        <div style="flex-shrink:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px 16px">
+            <div id="cb-show" class="show-card" style="margin-bottom:10px" onclick="showToOther()"><div style="display:flex;align-items:center;gap:10px"><div style="width:34px;height:34px;border-radius:10px;background:var(--pri-light);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-eye" style="color:var(--pri);font-size:13px"></i></div><div><div id="cb-show-title" style="font-size:13px;font-weight:700;color:var(--txt)">展示给对方</div><div id="cb-show-desc" style="font-size:11px;color:var(--txt-weak)">将当前对话发送给对方查看</div></div></div></div>
+            <div id="cb-input" style="display:none"><div style="display:flex;gap:8px;align-items:center"><button class="pill pill-line" style="padding:7px 12px;font-size:11px;gap:4px;display:flex;align-items:center" onclick="aiSuggest()"><i class="fas fa-wand-magic-sparkles" style="font-size:10px"></i>AI 建议</button><input class="chat-input" id="chat-input" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()"><button class="pill pill-pri" style="padding:7px 14px;font-size:12px" onclick="sendMsg()"><i class="fas fa-paper-plane" style="font-size:11px"></i></button></div></div>
+            <div id="cb-ai-start" style="display:none;text-align:center"><button class="pill pill-pri" style="padding:11px 40px;font-size:14px" onclick="startAiChat()"><i class="fas fa-comments" style="margin-right:6px"></i>发起对话</button><p style="font-size:11px;color:var(--txt-weak);margin-top:8px">AI 将代替你自动暖场聊天</p></div>
+            <div id="cb-ai-hint" style="display:none;text-align:center;padding:4px 0"><p style="font-size:12px;color:var(--pri);font-weight:500"><i class="fas fa-robot" style="margin-right:4px"></i>AI 正在帮你们聊天...</p></div>
+            <div id="cb-recv" style="display:none"><div style="display:flex;gap:10px"><button class="pill pill-line" style="flex:1;padding:11px 0;font-size:13px;color:var(--danger);border-color:#FECDD3" onclick="ignoreChat()"><i class="fas fa-xmark" style="margin-right:4px"></i>忽略</button><button class="pill pill-pri" style="flex:1;padding:11px 0;font-size:13px" onclick="acceptChat()"><i class="fas fa-check" style="margin-right:4px"></i>同意聊天</button></div></div>
+            <div id="cb-sent" style="display:none"><div style="display:flex;gap:8px;align-items:center"><input class="chat-input" disabled placeholder="等待对方回复后才能发送"></div><p style="font-size:11px;color:var(--txt-weak);margin-top:6px;text-align:center"><i class="fas fa-clock" style="margin-right:3px"></i>已展示给对方，等待回复中</p></div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bot-nav show" id="bot-nav">
+        <div class="nav-item" data-tab="messages" onclick="switchTab('messages')"><i class="fas fa-comment-dots"></i><span>消息</span></div>
+        <div class="nav-item on" data-tab="discover" onclick="switchTab('discover')"><i class="fas fa-compass"></i><span>发现</span></div>
+        <div class="nav-item" data-tab="me" onclick="switchTab('me')"><i class="fas fa-user"></i><span>我</span></div>
+    </nav>
+
+    <!-- AI对话弹层 -->
+    <div class="overlay" id="ai-overlay">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.35)" onclick="hideAiD()"></div>
+        <div class="bsheet">
+            <div style="text-align:center;margin-bottom:18px"><h3 style="font-size:17px;font-weight:800;color:var(--txt);margin-bottom:4px">选择开始方式</h3><p style="font-size:12px;color:var(--txt-weak)">当前内测阶段只保留两种方式</p></div>
+            <div class="lcard" style="padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="chooseMethod('self')"><div style="display:flex;align-items:center;gap:11px"><div style="width:40px;height:40px;border-radius:12px;border:1.5px solid var(--pri);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-pen-to-square" style="color:var(--pri);font-size:16px"></i></div><div><div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px">私信</div><p style="font-size:11px;color:var(--txt-weak);line-height:1.5">系统帮你起草第一句，你可以自己修改<br>后面每轮都能让 AI 提建议</p></div></div></div>
+            <div class="lcard" style="padding:14px 16px;cursor:pointer" onclick="chooseMethod('ai')"><div style="display:flex;align-items:center;gap:11px"><div style="width:40px;height:40px;border-radius:12px;border:1.5px solid #D97706;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-robot" style="color:#D97706;font-size:16px"></i></div><div><div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px">AI帮你聊</div><p style="font-size:11px;color:var(--txt-weak);line-height:1.5">系统先帮你暖一轮场<br>确认双方有兴趣后再进入真人聊天</p></div></div></div>
+        </div>
+    </div>
+
+    <div class="toast-box" id="toast-el"></div>
+</div>
+
+<script>
+// ========== 全局状态 ==========
+const S={currentTab:'discover',currentPage:'discover',profileCompleted:false,selectedScene:'共友',matched:false,matching:false,pageStack:[],chatMode:null,chatTarget:'lin',chatFrom:'',hasShown:false,sentChats:[],aiTimers:[]};
+const SCENES=['活动','共友','校友'];
+
+// 聊天数据 - zhang的self包含AI代发消息，模拟双方AI已聊过一轮
+const DATA={
+    lin:{name:'林小晴',source:'共友',avatar:'https://picsum.photos/seed/linxq88/200/200.jpg',
+        self:['你好呀！是啊，感觉我们兴趣挺像的','哇太巧了，我也是！'],
+        other:['嗨！看到我们有很多共同好友，很高兴认识你','对呀！我也很喜欢设计，最近在研究UI方面的东西']},
+    zhang:{name:'张明远',source:'校友',avatar:'https://picsum.photos/seed/zhangmy7/200/200.jpg',
+        self:['你好！我也在找校友交流呢','什么项目？我对编程也挺感兴趣的'],
+        other:['嗨！看到我们是校友，想认识一下','我最近在做一个编程项目，你感兴趣吗？']}
+};
+
+const AI_SCRIPT=[
+    {s:'other',t:'嗨！我是林小晴，很高兴认识你'},
+    {s:'self',t:'你好！听说我们都对设计感兴趣？'},
+    {s:'other',t:'对呀！我最近在研究UI设计，你呢？'},
+    {s:'self',t:'我也在做相关的事情，感觉可以交流一下'},
+    {s:'other',t:'太好了！改天一起聊聊设计趋势吧'}
+];
+
+// ========== 缓存DOM引用 ==========
+const $=id=>document.getElementById(id);
+const navEl=$('bot-nav');
+const chatMsgs=$('chat-messages');
+const chatBubbles=$('chat-bubbles');
+
+// ========== 导航 ==========
+function switchTab(t){
+    S.currentTab=t;S.currentPage=t;S.pageStack=[];
+    document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('on',e.dataset.tab===t));
+    document.querySelectorAll('.page:not(.sub)').forEach(p=>p.classList.remove('active'));
+    const el=$({discover:'pg-discover',messages:'pg-messages',me:'pg-me'}[t]);
+    if(el)el.classList.add('active');
+    document.querySelectorAll('.page.sub').forEach(p=>p.classList.remove('active','leaving'));
+    navEl.classList.add('show');closeDD()
+}
+
+function navTo(id){
+    S.pageStack.push(S.currentPage);S.currentPage=id;
+    const p=$(id);
+    if(p){document.querySelectorAll('.page.sub.active').forEach(x=>x.classList.remove('active'));p.classList.remove('leaving');requestAnimationFrame(()=>p.classList.add('active'))}
+    navEl.classList.remove('show');closeDD()
+}
+
+function goBack(){
+    clearAi();
+    const prev=S.pageStack.pop()||S.currentTab;S.currentPage=prev;
+    document.querySelectorAll('.page.sub.active').forEach(p=>{p.classList.add('leaving');setTimeout(()=>p.classList.remove('active','leaving'),260)});
+    const tabMap={discover:'pg-discover',messages:'pg-messages',me:'pg-me'};
+    if(tabMap[prev]){
+        S.currentTab=prev;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('on',e.dataset.tab===prev));navEl.classList.add('show')
+    } else {
+        const sub=$(prev);
+        if(sub&&sub.classList.contains('sub'))requestAnimationFrame(()=>{sub.classList.remove('leaving');sub.classList.add('active')})
+    }
+}
+
+// ========== 场景 ==========
+function selScene(s){if(S.matching)return;if(s!=='共友'){toast('该场景即将上线，敬请期待');return}S.selectedScene=s;renderScene()}
+function renderScene(){const i=SCENES.indexOf(S.selectedScene);document.querySelectorAll('.scene-card').forEach((c,j)=>c.className=j===i?'scene-card on':'scene-card off');document.querySelectorAll('.dots span').forEach((d,j)=>d.classList.toggle('on',j===i))}
+
+// ========== 发现页 ==========
+function renderDisc(){$('st-a').style.display='none';$('st-b').style.display='none';$('st-c').style.display='none';if(S.matched)$('st-c').style.display='block';else if(S.profileCompleted)$('st-b').style.display='block';else $('st-a').style.display='block'}
+function startMatch(){if(S.matching)return;S.matching=true;$('match-anim').classList.add('show');setTimeout(()=>{$('match-anim').classList.remove('show');S.matching=false;S.matched=true;renderDisc()},1500)}
+function rematch(){S.matched=false;renderDisc();setTimeout(startMatch,200)}
+function goProfileForm(){closeDD();navTo('pg-profile-form')}
+function fillQ(){toast('问卷填写完成');S.profileCompleted=true}
+function completeP(){S.profileCompleted=true;goBack();renderDisc();toast('画像填写完成')}
+
+// ========== AI弹层 ==========
+function showAiD(){$('ai-overlay').classList.add('show')}
+function hideAiD(){$('ai-overlay').classList.remove('show')}
+function chooseMethod(m){S.hasShown=false;hideAiD();openChatWith('lin','林小晴','共友',m,'discover')}
+
+// ========== 聊天 ==========
+function openChatFrom(target,from){
+    const d=DATA[target];
+    const mode=from==='received'?'received':from==='sent'?'sent':'self';
+    openChatWith(target,d.name,d.source,mode,from==='received'||from==='sent'?'pg-new-contacts':from)
+}
+
+function openChatWith(target,name,source,mode,from){
+    clearAi();S.chatTarget=target;S.chatMode=mode;S.chatFrom=from||'';
+    $('chat-name').textContent=name;$('chat-source').textContent=source;
+    renderBubbles();updateCB();navTo('pg-chat');
+    requestAnimationFrame(()=>chatBubbles.scrollTop=chatBubbles.scrollHeight)
+}
+
+// 批量渲染气泡 - 用DocumentFragment优化
+function renderBubbles(){
+    chatMsgs.innerHTML='';
+    const d=DATA[S.chatTarget];if(!d)return;
+    const frag=document.createDocumentFragment();
+    const n=Math.max(d.other.length,d.self.length);
+    for(let i=0;i<n;i++){
+        if(i<d.other.length)frag.appendChild(mkBubble('other',d.other[i],d.avatar));
+        if(i<d.self.length)frag.appendChild(mkBubble('self',d.self[i]))
+    }
+    chatMsgs.appendChild(frag)
+}
+
+// 创建气泡DOM - 减少innerHTML拼接
+function mkBubble(side,text,av){
+    const row=document.createElement('div');
+    row.className='msg-row'+(side==='self'?' self':'');
+    if(side==='other'){
+        row.innerHTML='<img src="'+av+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0"><div class="bubble bubble-other">'+esc(text)+'</div>'
+    }else{
+        row.innerHTML='<div class="my-av"><i class="fas fa-cat"></i></div><div class="bubble bubble-self">'+esc(text)+'</div>'
+    }
+    return row
+}
+
+// 追加单条气泡
+function addB(side,text,av){
+    chatMsgs.appendChild(mkBubble(side,text,av));
+    chatBubbles.scrollTop=chatBubbles.scrollHeight
+}
+
+function updateCB(){
+    const ids=['cb-show','cb-input','cb-ai-start','cb-ai-hint','cb-recv','cb-sent'];
+    for(let i=0;i<ids.length;i++)$(ids[i]).style.display='none';
+    const show=$('cb-show');
+    const needShow=S.chatMode==='self'||S.chatMode==='ai'||S.chatMode==='ai-chatting';
+    const hideShow=S.chatFrom==='pg-messages'||S.chatFrom==='pg-new-contacts';
+    if(needShow&&!hideShow){
+        show.style.display='block';
+        if(S.hasShown){show.classList.add('done');$('cb-show-title').textContent='已展示给对方';$('cb-show-desc').textContent='对方将在新的联系中看到此对话'}
+        else{show.classList.remove('done');$('cb-show-title').textContent='展示给对方';$('cb-show-desc').textContent='将当前对话发送给对方查看'}
+    }
+    const map={self:'cb-input',ai:'cb-ai-start','ai-chatting':'cb-ai-hint',received:'cb-recv',sent:'cb-sent'};
+    const target=$(map[S.chatMode]);if(target)target.style.display='block'
+}
+
+function sendMsg(){
+    const inp=$('chat-input'),t=inp.value.trim();if(!t)return;
+    addB('self',t);DATA[S.chatTarget].self.push(t);inp.value='';
+    setTimeout(()=>{const r=['说得真好！','嗯嗯，我也这么觉得','哈哈，有道理','这个想法很有意思','下次一起聊聊？'];const rp=r[Math.random()*r.length|0];addB('other',rp,DATA[S.chatTarget].avatar);DATA[S.chatTarget].other.push(rp)},700)
+}
+
+function aiSuggest(){const s=['可以问问对方最近在忙什么项目','分享一个你最近看到的设计灵感','聊聊你们共同好友的趣事','提议一起参加某个设计活动'];toast('AI 建议：'+s[Math.random()*s.length|0]);$('chat-input').value=s[Math.random()*s.length|0];$('chat-input').focus()}
+
+function startAiChat(){
+    S.chatMode='ai-chatting';updateCB();chatMsgs.innerHTML='';
+    AI_SCRIPT.forEach((m,i)=>{S.aiTimers.push(setTimeout(()=>{addB(m.s,m.t,m.s==='other'?DATA[S.chatTarget].avatar:undefined);if(m.s==='other')DATA[S.chatTarget].other.push(m.t);else DATA[S.chatTarget].self.push(m.t)},(i+1)*1300))})
+}
+
+function clearAi(){for(let i=0;i<S.aiTimers.length;i++)clearTimeout(S.aiTimers[i]);S.aiTimers=[]}
+
+function showToOther(){
+    if(S.hasShown)return;S.hasShown=true;toast('已展示给对方');
+    const t=S.chatTarget,d=DATA[t];
+    if(!S.sentChats.find(c=>c.target===t)){S.sentChats.push({target:t,name:d.name,source:d.source,avatar:d.avatar});updateSent()}
+    updateCB()
+}
+
+function updateSent(){
+    const list=$('sent-list'),empty=$('sent-empty');
+    if(S.sentChats.length&&empty)empty.style.display='none';
+    list.querySelectorAll('.si').forEach(e=>e.remove());
+    S.sentChats.forEach(ch=>{
+        const c=document.createElement('div');c.className='lcard si';
+        c.style.cssText='padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px';
+        c.onclick=()=>openChatWith(ch.target,ch.name,ch.source,'sent','pg-new-contacts');
+        c.innerHTML='<img src="'+ch.avatar+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:14px;font-weight:700;color:var(--txt)">'+ch.name+'</span><span class="tag-pri tag" style="font-size:10px">'+ch.source+'</span></div><p style="font-size:12px;color:var(--txt-weak)">等待对方回复</p></div><i class="fas fa-clock" style="font-size:14px;color:var(--txt-weak);flex-shrink:0"></i>';
+        list.appendChild(c)
+    })
+}
+
+function acceptChat(){toast('已同意聊天，可以开始对话了');S.chatMode='self';S.chatFrom='pg-new-contacts';S.hasShown=false;updateCB()}
+function ignoreChat(){toast('已忽略');goBack()}
+function goNewContacts(){navTo('pg-new-contacts')}
+
+// ========== 工具 ==========
+function toggleDD(){$('dd').classList.toggle('show')}
+function closeDD(){$('dd').classList.remove('show')}
+document.addEventListener('click',e=>{if(!e.target.closest('#plus-btn')&&!e.target.closest('#dd'))closeDD()});
+
+let tt=null;
+function toast(m){const t=$('toast-el');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+
+// 触摸滑动
+!function(){const c=$('scene-carousel');let sx=0;c.addEventListener('touchstart',e=>{sx=e.changedTouches[0].clientX},{passive:true});c.addEventListener('touchend',e=>{const d=sx-e.changedTouches[0].clientX;if(Math.abs(d)>40){const i=SCENES.indexOf(S.selectedScene);if(d>0&&i<2)selScene(SCENES[i+1]);else if(d<0&&i>0)selScene(SCENES[i-1])}},{passive:true})}();
+
+renderScene();renderDisc();
+</script>
+</body>
+</html>
